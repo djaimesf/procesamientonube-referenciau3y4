@@ -4,6 +4,10 @@ Pensado para Dataproc Serverless (runtime 2.2, Spark 3.5.3, Python 3.12) y para
 correr igual en local (Cloud Shell) apuntando a carpetas locales.
 
 No modifica los modulos `churn.silver` / `churn.gold`: solo los orquesta.
+
+U4: con --crm-revisado el crm se lee de <lake>/revisado/crm/ (solo las filas
+que pasaron la revision del lote) en lugar de <bronze>/crm/. Sin el
+interruptor, el comportamiento es el mismo de la Unidad 3.
 """
 
 from __future__ import annotations
@@ -91,6 +95,11 @@ def main(argv: list[str] | None = None) -> None:
         default=",".join(LOTES_U3_POR_DEFECTO),
         help="Fechas de lotes crm separadas por coma (por defecto los 5 de U3)",
     )
+    parser.add_argument(
+        "--crm-revisado",
+        action="store_true",
+        help="U4: leer el crm de <lake>/revisado/crm/ en lugar de <bronze>/crm/",
+    )
     args = parser.parse_args(argv)
 
     bronze = _resolver_ruta(args.bronze)
@@ -100,13 +109,15 @@ def main(argv: list[str] | None = None) -> None:
 
     # rutas de archivo explicitas: nada de listar el bucket ni usar globs
     ruta_info_churn = f"{bronze}/base/telco_entrenamiento.csv"
-    rutas_crm = [f"{bronze}/crm/clientes_{fecha}.csv" for fecha in lotes]
+    carpeta_crm = f"{lake}/revisado/crm" if args.crm_revisado else f"{bronze}/crm"
+    rutas_crm = [f"{carpeta_crm}/clientes_{fecha}.csv" for fecha in lotes]
     ruta_uso = f"{bronze}/uso"
 
     spark = _crear_spark()
     # confirma en el log (driver, y en Dataproc el log del job) que el master
     # es el del entorno real, no local[*] forzado por error
     print(f"RESUMEN | master: {spark.sparkContext.master}")
+    print(f"RESUMEN | crm desde: {carpeta_crm} ({len(lotes)} lotes)")
 
     # --- paso 1: silver ---
     silver_info_churn, cuarentena_info_churn = procesar(spark, [ruta_info_churn], COLUMNAS_INFO_CHURN, id_ejecucion)
