@@ -146,9 +146,9 @@ def test_tenure_con_decimal_es_imposible():
     assert reglas_de_fila(fila_valida(tenure="72.0")) == ["valor_imposible_tenure"]
 
 
-def test_tenure_75_fuera_de_rango():
-    """El historico llega hasta 72 meses: 75 esta fuera de rango."""
-    assert reglas_de_fila(fila_valida(tenure="75")) == ["fuera_de_rango_tenure"]
+def test_tenure_75_es_valido():
+    """75 meses supera al historico (72), pero no es un error: pasa."""
+    assert reglas_de_fila(fila_valida(tenure="75")) == []
 
 
 @pytest.mark.parametrize("valor", ["abc", " "])
@@ -157,17 +157,9 @@ def test_tenure_no_numerico(valor):
     assert reglas_de_fila(fila_valida(tenure=valor)) == ["no_numerico_tenure"]
 
 
-@pytest.mark.parametrize("valor", ["18.25", "118.75"])
-def test_monthly_charges_limites_son_validos(valor):
-    """Los limites del historico (18.25 y 118.75) se aceptan."""
-    assert reglas_de_fila(fila_valida(MonthlyCharges=valor)) == []
-
-
-def test_monthly_charges_sobre_el_limite_fuera_de_rango():
-    """118.76 supera el maximo historico de 118.75."""
-    assert reglas_de_fila(fila_valida(MonthlyCharges="118.76")) == [
-        "fuera_de_rango_monthlycharges"
-    ]
+def test_monthly_charges_alto_es_valido():
+    """Un cargo de 150 (alza de tarifas) supera al historico, pero pasa."""
+    assert reglas_de_fila(fila_valida(MonthlyCharges="150")) == []
 
 
 def test_monthly_charges_negativo_es_imposible():
@@ -235,7 +227,7 @@ def test_cada_fila_queda_en_un_solo_lugar():
     filas = [
         fila_valida(customerID="0001-AAAAA"),
         fila_valida(customerID="0002-BBBBB", Contract="1 year"),
-        fila_valida(customerID="0003-CCCCC", tenure="75", PaymentMethod="PSE"),
+        fila_valida(customerID="0003-CCCCC", tenure="-3", PaymentMethod="PSE"),
         fila_valida(customerID="0001-AAAAA"),  # duplicado identico
     ]
     buenas, cuarentena = revisar(filas)
@@ -260,7 +252,7 @@ def test_registro_de_cuarentena_tiene_las_8_claves():
 
 def test_fecha_error_es_la_misma_en_todos_los_registros():
     """La fecha del error se calcula una vez por revision."""
-    _, cuarentena = revisar([fila_valida(Contract="1 year", tenure="75")])
+    _, cuarentena = revisar([fila_valida(Contract="1 year", tenure="-3")])
     assert len(cuarentena) == 2
     assert len({r["fecha_error"] for r in cuarentena}) == 1
 
