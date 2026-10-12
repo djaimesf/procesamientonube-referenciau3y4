@@ -12,7 +12,7 @@ set -euo pipefail
 #   lake del grupo.
 #
 # Uso:
-#   bash jobs/lanzar_batch.sh BATCH_ID LAKE SA GRUPO [LOTES]
+#   bash jobs/lanzar_batch.sh BATCH_ID LAKE SA GRUPO [LOTES [CRM]]
 #
 #   BATCH_ID  id unico del batch en Dataproc, ej: u3-class-sb-20261008-01
 #   LAKE      nombre del bucket lake del grupo, SIN el prefijo gs://
@@ -24,10 +24,19 @@ set -euo pipefail
 #             separadas por coma y sin espacios,
 #             ej: 2026-08-03,2026-08-10,2026-08-17,2026-08-24,2026-08-31,2026-09-07
 #             Si se omite, u3_batch.py usa sus 5 lotes por defecto (los de U3).
+#   CRM       (opcional, desde U4) unico valor valido: revisado
+#             Hace que u3_batch.py lea el crm de gs://LAKE/revisado/crm/
+#             (solo las filas que pasaron la revision del lote) en lugar
+#             del bronze. Si se omite, lee del bronze (igual que U3).
 #
 # Ejemplo (valores del profesor, solo de referencia):
 #   bash jobs/lanzar_batch.sh u3-class-sb-20261008-02 u3-class-lake-20261001 \
 #     churn-profe@nube-20262-main.iam.gserviceaccount.com class
+#
+# Ejemplo U4 (lotes 1..6 leidos desde revisado/):
+#   bash jobs/lanzar_batch.sh u4-class-sb-20261013-01 u3-class-lake-20261001 \
+#     churn-profe@nube-20262-main.iam.gserviceaccount.com class \
+#     2026-08-03,2026-08-10,2026-08-17,2026-08-24,2026-08-31,2026-09-07 revisado
 #
 # IMPORTANTE:
 #   - BATCH_ID debe ser UNICO en el proyecto. Si vuelves a correr el batch,
@@ -44,6 +53,7 @@ LAKE="${2:?Falta el nombre del bucket lake (sin gs://), p. ej. u3-class-lake-202
 SA="${3:?Falta el correo de la service account, p. ej. churn-profe@nube-20262-main.iam.gserviceaccount.com}"
 GRUPO="${4:?Falta el valor del label grupo, p. ej. class o g03}"
 LOTES="${5:-}"
+CRM="${6:-}"
 
 # Bucket bronze: comun a todos los grupos, no se parametriza
 BRONZE="data-telco-bronze-20260926"
@@ -69,6 +79,19 @@ else
   echo "Lotes crm: los 5 por defecto de u3_batch.py (U3)"
 fi
 
+# CRM (opcional, U4): el unico valor valido es "revisado"
+ARGS_CRM=()
+if [[ -n "${CRM}" ]]; then
+  if [[ "${CRM}" != "revisado" ]]; then
+    echo "Error: el 6.o dato solo puede ser 'revisado' (o no ponerlo)." >&2
+    exit 1
+  fi
+  ARGS_CRM=(--crm-revisado)
+  echo "Crm desde: gs://${LAKE}/revisado/crm/ (U4)"
+else
+  echo "Crm desde: gs://${BRONZE}/crm/ (U3)"
+fi
+
 gcloud dataproc batches submit pyspark "gs://${LAKE}/codigo/u3_batch.py" \
   --batch="${BATCH_ID}" \
   --region=us-central1 \
@@ -83,7 +106,8 @@ gcloud dataproc batches submit pyspark "gs://${LAKE}/codigo/u3_batch.py" \
   --bronze="gs://${BRONZE}" \
   --lake="gs://${LAKE}" \
   --id-ejecucion="${BATCH_ID}" \
-  "${ARGS_LOTES[@]}"
+  "${ARGS_LOTES[@]}" \
+  "${ARGS_CRM[@]}"
 
 echo "Para revisar el costo/consumo del batch, ejecuta:"
 echo "  gcloud dataproc batches describe ${BATCH_ID} --region=us-central1 --format=\"yaml(state,createTime,stateTime,runtimeInfo.approximateUsage)\""
