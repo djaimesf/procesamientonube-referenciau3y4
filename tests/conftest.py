@@ -5,13 +5,13 @@ import os
 os.environ.setdefault("PYARROW_IGNORE_TIMEZONE", "1")
 
 import pytest
-from pyspark.sql import SparkSession
 
 
 # scope="session": arrancar una SparkSession tarda varios segundos, asi que
 # la creamos una sola vez y la reutilizamos en todos los tests.
 @pytest.fixture(scope="session")
 def spark():
+    from pyspark.sql import SparkSession
     spark = (
         SparkSession.builder.master("local[2]")#corre spark en shell con 2 nucleos, rapido y gratis no nube
         .appName("tests-u3")
