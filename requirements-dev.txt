@@ -11,5 +11,7 @@ pandas==2.3.3
 pyarrow==25.0.1
 # numpy<2: pyspark 3.5.3 usa "np.NaN", eliminado en numpy 2
 numpy==1.26.4
+# pydantic: reglas de la revision del lote (U4); misma version que trae Airflow 3.3.2
+pydantic==2.13.5
 
 # Nota: Java 17 no se instala con pip; debe estar en el sistema (JAVA_HOME en el activate del venv).
