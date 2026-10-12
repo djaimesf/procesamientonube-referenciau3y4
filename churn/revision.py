@@ -42,19 +42,15 @@ CATEGORIAS_PERMITIDAS = {
     ],
 }
 
-RANGOS = {
-    "tenure": (0, 72),
-    "MonthlyCharges": (18.25, 118.75),
-    "TotalCharges": (18.8, 8684.8),
-}
-
-
 class LoteBloqueado(Exception):
     """El lote no se puede procesar (faltan columnas obligatorias)."""
 
 
-# Listas y rangos calculados UNA vez desde base/telco_entrenamiento.csv
-# (info churn, 7.043 clientes). Si el historico cambia, se actualizan aqui.
+# Listas calculadas UNA vez desde base/telco_entrenamiento.csv (info churn,
+# 7.043 clientes). Si el historico cambia, se actualizan aqui.
+# Los numeros NO se comparan con el rango del historico: con los 10 lotes
+# reales esa regla rechazaba clientes validos (75 meses, alza de tarifas).
+# Ese cambio se vigila como deriva en la U8, no con cuarentena.
 
 def _texto(v):
     return None if v is None else str(v)
@@ -123,9 +119,6 @@ class ClienteLote(pydantic.BaseModel):
         t = _texto(v).strip()
         if not re.fullmatch(r"\d+", t):
             raise PydanticCustomError("valor_imposible_tenure", "imposible")
-        lo, hi = RANGOS["tenure"]
-        if not lo <= int(t) <= hi:
-            raise PydanticCustomError("fuera_de_rango_tenure", "fuera")
         return t
 
     @pydantic.field_validator("MonthlyCharges", "TotalCharges", mode="before")
@@ -138,9 +131,6 @@ class ClienteLote(pydantic.BaseModel):
             raise PydanticCustomError("no_numerico_" + low, "no numerico")
         if x < 0:
             raise PydanticCustomError("valor_imposible_" + low, "imposible")
-        lo, hi = RANGOS[col]
-        if not lo <= x <= hi:
-            raise PydanticCustomError("fuera_de_rango_" + low, "fuera")
         return v
 
 
