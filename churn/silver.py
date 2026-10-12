@@ -15,6 +15,7 @@ from collections import Counter
 from pyspark.sql import DataFrame, SparkSession, Window
 from pyspark.sql import functions as F
 from pyspark.sql.types import StringType, StructField, StructType
+from churn.columnas import COLUMNAS_BASE, COLUMNAS_CRM, COLUMNAS_INFO_CHURN
 
 
 def validar_encabezados(columnas: list[str], esperadas: list[str]) -> list[dict]:
@@ -254,41 +255,6 @@ def churn_a_binario(df: DataFrame) -> DataFrame:
         "Churn",
         F.when(F.col("Churn") == "Yes", 1).when(F.col("Churn") == "No", 0).cast("int"),
     )
-
-
-# Columnas comunes a los dos archivos de origen (info churn, entrenamiento
-# IBM, y lotes del crm). No incluye "Churn" ni "fecha_lote": esas son las
-# columnas que distinguen a cada fuente.
-COLUMNAS_BASE = [
-    "customerID",
-    "gender",
-    "SeniorCitizen",
-    "Partner",
-    "Dependents",
-    "tenure",
-    "PhoneService",
-    "MultipleLines",
-    "InternetService",
-    "OnlineSecurity",
-    "OnlineBackup",
-    "DeviceProtection",
-    "TechSupport",
-    "StreamingTV",
-    "StreamingMovies",
-    "Contract",
-    "PaperlessBilling",
-    "PaymentMethod",
-    "MonthlyCharges",
-    "TotalCharges",
-]
-
-# Info churn: entrenamiento IBM (21 columnas, incluye "Churn").
-COLUMNAS_INFO_CHURN = COLUMNAS_BASE + ["Churn"]
-
-# CRM: lotes semanales (21 columnas, incluye "fecha_lote"). En el archivo
-# real "fecha_lote" esta en la posicion 2, no al final; por eso leer_csv
-# empareja por NOMBRE y no por posicion.
-COLUMNAS_CRM = COLUMNAS_BASE + ["fecha_lote"]
 
 
 def agregar_linaje(df: DataFrame, id_ejecucion: str) -> DataFrame:
