@@ -1,0 +1,13 @@
+# Fijas: las mismas con que se entrenó el modelo (metadata.json de la U5)
+xgboost==3.4.1
+scikit-learn==1.9.1
+joblib==1.6.0
+pandas==3.1.0
+# Servicio
+fastapi==0.162.0
+uvicorn[standard]==0.54.0
+pydantic==2.14.1
+# GCP
+google-cloud-storage==3.17.1
+google-cloud-bigquery==3.46.2
+db-dtypes==1.9.0
