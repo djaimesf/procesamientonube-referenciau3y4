@@ -1,0 +1,8 @@
+{
+  "lake": "u3-class-lake-20261001",
+  "sa": "churn-profe@nube-20262-main.iam.gserviceaccount.com",
+  "grupo": "class",
+  "dataset": "class_gold_20261001",
+  "modelo_registro": "u5_class_mdl_20261022",
+  "url_api": "PEGAR_AQUI_LA_URL_DE_CLOUD_RUN"
+}
